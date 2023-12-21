@@ -1,6 +1,6 @@
 import cv2 as cv
-from ImageDisplay import ImageCv
-from WindowCapture import WindowCapture, active_windows
+from models.ImageDisplay import ImageCv
+from models.WindowCapture import WindowCapture, active_windows
 
 source = ImageCv()
 source.__int__('Images/farm.jpg', cv.IMREAD_UNCHANGED)

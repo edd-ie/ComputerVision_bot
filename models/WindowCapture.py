@@ -6,23 +6,7 @@ import pyautogui
 import win32con
 import win32gui
 import win32ui
-
-
-# Show active windows
-def active_windows():
-    def winEnumHandler(hwnd, ctx):
-        if win32gui.IsWindowVisible(hwnd):
-            print("Address: ", hex(hwnd), ",   Name: ", win32gui.GetWindowText(hwnd))
-
-    win32gui.EnumWindows(winEnumHandler, None)
-
-
-def colour_convert(data):
-    # convert to a matrix
-    screen = np.array(data)
-    # invert colours
-    screen = cv.cvtColor(screen, cv.COLOR_RGB2BGR)
-    return screen
+from models.Search import ImageSearch
 
 
 class WindowCapture:
@@ -35,22 +19,27 @@ class WindowCapture:
     screen_pos_y = 0
 
     def __int__(self, window_name=None):
-        if window_name is not None:
+        if window_name is None:
+            self.hwnd = win32gui.GetDesktopWindow()
+        else:
             self.hwnd = win32gui.FindWindow(None, window_name)
-            window_rect = win32gui.GetWindowRect(self.hwnd)  # get top left pos and bottom right pos
-            self.w = window_rect[2] - window_rect[0]
-            self.h = window_rect[3] - window_rect[1]
+            if not self.hwnd:
+                raise Exception('Window not found: {}'.format(window_name))
 
-            # Removing border (Optional)
-            borders = 8
-            title_bar = 30
-            self.crop_x = borders
-            self.crop_y = title_bar
+        window_rect = win32gui.GetWindowRect(self.hwnd)  # get top left pos and bottom right pos
+        self.w = window_rect[2] - window_rect[0]
+        self.h = window_rect[3] - window_rect[1]
 
-            self.screen_pos_x = self.w - borders
-            self.screen_pos_y = self.h - title_bar
-            self.w = self.w - (borders * 2)
-            self.h = self.h - (title_bar + borders)
+        # Removing border (Optional)
+        borders = 8
+        title_bar = 20
+        self.crop_x = borders
+        self.crop_y = title_bar
+
+        self.screen_pos_x = self.w - borders
+        self.screen_pos_y = self.h - title_bar
+        self.w = self.w - (borders * 2)
+        self.h = self.h - (title_bar + borders)
 
     # Using Win32
     def window_capture(self):
@@ -85,19 +74,22 @@ class WindowCapture:
 
         return img
 
-    def capture(self, method="win"):
+    def findPos(self,  img_path, shape="rectangle", threshold=0.49, method="win",):
+        search = ImageSearch(img_path, shape, threshold)
+
         loop_t = time()
         while True:
             # take a screenshot
             if method == "pygui":
-                screen = colour_convert(pyautogui.screenshot())
+                screen = self.colour_convert(pyautogui.screenshot())
             elif method == "pil":
-                screen = colour_convert(ImageGrab.grab())
+                screen = self.colour_convert(ImageGrab.grab())
             else:
                 screen = self.window_capture()
 
             # display
-            cv.imshow("Window capture", screen)
+            # cv.imshow("Window capture", screen)
+            center_points = search.search(screen)
 
             print('FPS: {}'.format(1 / (time() - loop_t)))
             loop_t = time()
@@ -108,3 +100,20 @@ class WindowCapture:
 
     def getScreenPos(self, pos):
         return pos[0] + self.screen_pos_x, pos[1] + self.screen_pos_y
+
+    @staticmethod
+    def colour_convert(data):
+        # convert to a matrix
+        screen = np.array(data)
+        # invert colours
+        screen = cv.cvtColor(screen, cv.COLOR_RGB2BGR)
+        return screen
+
+    @staticmethod
+    # Show active windows
+    def active_windows():
+        def winEnumHandler(hwnd, ctx):
+            if win32gui.IsWindowVisible(hwnd):
+                print("Address: ", hex(hwnd), ",   Name: ", win32gui.GetWindowText(hwnd))
+
+        win32gui.EnumWindows(winEnumHandler, None)

@@ -61,9 +61,9 @@ class ImageSearch:
                 center_points.append((center_x, center_y))
 
                 if self.shape == "marker":
-                    color = (0, 0, 255)  # BGR
+                    color = (0, 0, 0)  # BGR
                     cv.drawMarker(image, (center_x, center_y), color, markerType=cv.MARKER_TILTED_CROSS,
-                                  markerSize=9)
+                                  markerSize=10)
                 else:
                     # Drawing a rectangle Parameters:
                     #  source, top_left pos, bottom_right pos, colour, thickness, line_type
